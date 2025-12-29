@@ -1,0 +1,97 @@
+<html>
+<head>
+    <title>Flying Cheetos</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles.css">
+    <link href='https://fonts.googleapis.com/css?family=Pacifico' rel='stylesheet'>
+    <style>
+        body {
+            margin: 0;
+            background-color: #4ec0ca;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Pacifico', cursive;
+        }
+
+        #game-container {
+            position: relative;
+            width: 640px; /* Matching your JS Canvas width */
+            height: 480px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        }
+
+        #landing-page {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('http://s2js.com/img/etc/flappyback.png');
+            background-size: cover;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        #landing-page h1 {
+            color: #FF4500;
+            font-size: 50px;
+            text-shadow: 3px 3px 0px #fff;
+            margin-bottom: 20px;
+        }
+
+        .preview-img {
+            width: 80px;
+            margin-bottom: 30px;
+            animation: bounce 2s infinite ease-in-out;
+        }
+
+        .enter-btn {
+            padding: 15px 40px;
+            font-size: 24px;
+            background-color: #f7941d;
+            color: white;
+            border: 4px solid #fff;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: 'Pacifico', cursive;
+            transition: transform 0.2s;
+            box-shadow: 0 6px 0px #d35400;
+        }
+
+        .enter-btn:hover {
+            transform: scale(1.1);
+            background-color: #ffaa42;
+        }
+
+        .enter-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0px #d35400;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-30px); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="landing-page">
+            <h1>Flying Cheetos</h1>
+            <img src="player.png" class="preview-img" alt="Cheetos">
+            <button class="enter-btn" onclick="startGame()">ENTER GAME</button>
+        </div>
+
+        <canvas id="myCanvas" width="640" height="480" style="background:url('http://s2js.com/img/etc/flappyback.png'); background-size: 100%;"></canvas>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

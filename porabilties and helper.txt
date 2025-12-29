@@ -1,0 +1,5 @@
+shield 10%
+star 50%
+"S" to open shop
+"E" to close shop
+to enable cheat mode make the "collected stars: 0;" to "collected stars:1500;"

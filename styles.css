@@ -1,0 +1,81 @@
+body {
+  font-family: 'Pacifico', cursive;
+  display: flex;
+  justify-content: center;
+  align-items: center; /* Centers the game vertically */
+  height: 100vh;
+  margin: 0;
+  background-color: #4ec0ca; /* Sky blue background for the page */
+}
+
+/* Container to hold both the Landing Page and the Canvas */
+#game-container {
+  position: relative;
+  width: 640px; 
+  height: 480px;
+}
+
+canvas {
+  border: 1px solid #0a3cda;
+  display: block;
+}
+
+/* --- LANDING PAGE STYLES --- */
+#landing-page {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('http://s2js.com/img/etc/flappyback.png');
+  background-size: cover;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  text-align: center;
+}
+
+#landing-page h1 {
+  color: #FF4500;
+  font-size: 60px;
+  margin: 0;
+  text-shadow: 4px 4px 0px #fff;
+}
+
+.preview-img {
+  width: 100px;
+  margin: 20px 0;
+  /* Fun floating animation */
+  animation: float 2s infinite ease-in-out;
+}
+
+.enter-btn {
+  font-family: 'Pacifico', cursive;
+  padding: 15px 50px;
+  font-size: 28px;
+  background-color: #f7941d;
+  color: white;
+  border: 5px solid #fff;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 8px 0px #d35400;
+  transition: all 0.2s;
+}
+
+.enter-btn:hover {
+  transform: scale(1.05);
+  background-color: #ffaa42;
+}
+
+.enter-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 4px 0px #d35400;
+}
+
+/* Floating animation for the Cheeto on the website */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-25px); }
+}
