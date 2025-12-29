@@ -91,7 +91,7 @@ const SKINS = {
 };
 
 // Infinite money for testing
-collectedStars = 1500; 
+collectedStars = 0; 
 
 if (localStorage.getItem('flappyStars')) {
     collectedStars = parseInt(localStorage.getItem('flappyStars'));
@@ -492,5 +492,6 @@ var bottom_bar = new Image(); bottom_bar.src = 'red.png';
 var pipe_piece = new Image(); pipe_piece.onload = reset_game; pipe_piece.src = 'wall.png';
 var bird = new MySprite(SKINS[currentSkinKey].src); 
 bird.x = myCanvas.width / 3; bird.y = myCanvas.height / 2;
+
 
 setInterval(Do_a_Frame, 1000 / FPS);
