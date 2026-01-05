@@ -5,17 +5,52 @@ var FPS = 40;
 const CANVAS_WIDTH = 640; 
 myCanvas.width = CANVAS_WIDTH; 
 
-// --- NEW STATE FOR WEBSITE ---
+// --- BOSS FIGHT VARIABLES ---
+const BOSS_IMG = new Image();
+BOSS_IMG.src = 'boss.png'; 
+const CHOCO_IMG = new Image();
+CHOCO_IMG.src = 'chocolate.png'; 
+let boss = {
+    x: CANVAS_WIDTH + 100,
+    y: 100,
+    width: 150,
+    height: 150,
+    stamina: 100, 
+    speedY: 2,
+    movingIn: true
+};
+let chocolates = [];
+let victoryTimer = 0; 
+
+// --- BACKGROUND & TRANSITION CONFIG ---
+const backgroundImages = [];
+for (let i = 1; i <= 5; i++) {
+    let img = new Image();
+    img.src = `bg${i}.png`;
+    backgroundImages.push(img);
+}
+
+const AREA_NAMES = [
+    "The Beginning",  
+    "The SKY",     
+    "The SUNSET",       
+    "The NIGHT",     
+    "The VOID" 
+];
+
+let currentBGIndex = 0;
+let transitionText = "";
+let transitionTimer = 0;
+
 var game_mode = 'waiting_for_website'; 
 
-// --- FLASH EFFECT VARIABLES ---
 let flashColor = null;
 let flashTimer = 0;
-let levelReached = 1; // Track levels to trigger flash only once
+let levelReached = 1; 
 
 function triggerFlash(color) {
     flashColor = color;
-    flashTimer = 10; // Flash stays for 10 frames
+    flashTimer = 10; 
 }
 
 function startGame() {
@@ -28,10 +63,10 @@ var jump_amount = -7;
 var max_fall_speed = +8;   
 var acceleration = 0.6;    
 
-// --- SUPERPOWER PHYSICS ---
-const SUPER_JUMP_AMOUNT = -4.5; 
-const SUPER_ACCELERATION = 0.25;     
-const SUPER_MAX_FALL_SPEED = +4;     
+// --- IMPROVED SUPERPOWER PHYSICS (BUFFED) ---
+const SUPER_JUMP_AMOUNT = -3.8;       // Gentler tap for better hovering
+const SUPER_ACCELERATION = 0.18;      // Much slower gravity for true "floating"
+const SUPER_MAX_FALL_SPEED = +3.5;    // Capped fall speed for easier control
 
 // --- SUPERPOWER STAR MAGNET ---
 const MAGNET_RADIUS = 100; 
@@ -50,14 +85,11 @@ var time_game_last_running;
 var bottom_bar_offset = 0;
 var pipes = [];
 
-// --- PROCEDURAL GENERATION ---
 var pipe_spawn_timer = 0;
 const PIPE_SPAWN_INTERVAL_MS = 2500; 
 
-// --- SCORE VARIABLE ---
 let currentScore = 0; 
 
-// --- SOUND INTEGRATION ---
 const flapSound = new Audio('woof.mp3');
 flapSound.load(); 
 flapSound.volume = 0.25; 
@@ -110,7 +142,6 @@ const SKINS = {
     'black':   { src: 'player_black.png', cost: 650, current: false, name: 'Legendary Cheetos' } 
 };
 
-// Initialize Data
 if (localStorage.getItem('flappyStars')) {
     collectedStars = parseInt(localStorage.getItem('flappyStars'));
 }
@@ -169,9 +200,76 @@ MySprite.prototype.Do_Frame_Things = function () {
 function ImagesTouching(thing1, thing2) {
     if (!thing1.visible || !thing2.visible) return false; 
     if (!thing1.MyImg.complete || !thing2.MyImg.complete) return false;
-    if (thing1.x >= thing2.x + thing2.MyImg.width || thing1.x + thing1.MyImg.width <= thing2.x) return false;
-    if (thing1.y >= thing2.y + thing2.MyImg.height || thing1.y + thing1.MyImg.height <= thing2.y) return false;
+    
+    let w1 = thing1.MyImg.width || thing1.width;
+    let h1 = thing1.MyImg.height || thing1.height;
+    let w2 = thing2.MyImg.width || thing2.width;
+    let h2 = thing2.MyImg.height || thing2.height;
+
+    if (thing1.x >= thing2.x + w2 || thing1.x + w1 <= thing2.x) return false;
+    if (thing1.y >= thing2.y + h2 || thing1.y + h1 <= thing2.y) return false;
     return true;
+}
+
+// --- BOSS FIGHT FUNCTIONS ---
+function spawnChocolate() {
+    let choc = new MySprite();
+    choc.MyImg = CHOCO_IMG;
+    choc.x = boss.x;
+    choc.y = boss.y + boss.height/2;
+    choc.velocity_x = -6; 
+    choc.velocity_y = (bird.y - boss.y) / 40; 
+    chocolates.push(choc);
+}
+
+function updateBoss() {
+    if (boss.movingIn) {
+        boss.x -= 2;
+        if (boss.x <= CANVAS_WIDTH - 180) boss.movingIn = false;
+    } else {
+        boss.y += boss.speedY;
+        if (boss.y > 300 || boss.y < 50) boss.speedY *= -1;
+
+        if (Math.random() < 0.06) spawnChocolate();
+        
+        boss.stamina -= 0.1; 
+        if (boss.stamina <= 0) {
+            triggerFlash("rgba(0, 255, 0, 0.6)"); 
+            victoryTimer = 100; 
+            game_mode = 'running'; 
+            currentScore = 51; 
+            boss.x = CANVAS_WIDTH + 500; 
+            chocolates = []; 
+            pipe_spawn_timer = 0; 
+        }
+    }
+
+    if (BOSS_IMG.complete) {
+        ctx.drawImage(BOSS_IMG, boss.x, boss.y, boss.width, boss.height);
+    }
+
+    for (let i = chocolates.length - 1; i >= 0; i--) {
+        chocolates[i].Do_Frame_Things();
+        if (ImagesTouching(bird, chocolates[i])) {
+             if (isShieldActive) {
+                deactivateShield();
+                chocolates.splice(i, 1);
+            } else {
+                if ((currentSkinKey === 'tough' || currentSkinKey === 'black') && currentLives > 0) { 
+                    currentLives--; 
+                    chocolates.splice(i, 1);
+                } else {
+                    game_mode = 'over'; 
+                }
+            }
+        }
+        else if (chocolates[i].x < -50) chocolates.splice(i, 1);
+    }
+
+    ctx.fillStyle = "red";
+    ctx.fillRect(CANVAS_WIDTH/2 - 50, 20, boss.stamina, 10);
+    ctx.strokeStyle = "white";
+    ctx.strokeRect(CANVAS_WIDTH/2 - 50, 20, 100, 10);
 }
 
 function purchaseOrEquipSkin(skinKey) {
@@ -186,6 +284,10 @@ function purchaseOrEquipSkin(skinKey) {
             currentSkinKey = skinKey; 
             localStorage.setItem('currentSkin', skinKey);
             if (currentSkinKey === 'yellow' || currentSkinKey === 'black') { wallDestroyCharges = MAX_DESTROY_CHARGES; }
+            
+            // Re-apply life logic on equip
+            if (currentSkinKey === 'black' || currentSkinKey === 'tough') currentLives = INITIAL_LIVES;
+            else currentLives = 0;
         }
     } else if (collectedStars >= skin.cost) {
         collectedStars -= skin.cost;
@@ -233,11 +335,14 @@ function Got_Player_Input(MyEvent) {
   switch (game_mode) {
     case 'prestart': game_mode = 'running'; break;
     case 'running':
+    case 'boss': 
         if (MyEvent.type === 'touchstart' || MyEvent.type === 'mousedown') {
             let current_jump = (currentSkinKey === 'happy' || currentSkinKey === 'black') ? SUPER_JUMP_AMOUNT : jump_amount;
             bird.velocity_y = current_jump;
         }
-        if (MyEvent.type === 'keydown' && MyEvent.keyCode === 83) { game_mode = 'shop'; }
+        if (MyEvent.type === 'keydown' && MyEvent.keyCode === 83) { 
+            if (currentScore < 1) game_mode = 'shop'; 
+        }
         if (MyEvent.type === 'keydown' && MyEvent.keyCode === 68) { useWallDestruction(); }
         break;
     case 'shop':
@@ -263,7 +368,6 @@ addEventListener('mousedown', Got_Player_Input);
 addEventListener('keydown', Got_Player_Input); 
 
 function make_bird_slow_and_fall() {
-    // Dynamic Difficulty Scaling
     let dynamic_accel = acceleration;
     let dynamic_max = max_fall_speed;
     
@@ -277,7 +381,6 @@ function make_bird_slow_and_fall() {
         dynamic_max = 9;
     }
 
-    // Apply special skin multiplier if needed
     let final_accel = (currentSkinKey === 'happy' || currentSkinKey === 'black') ? SUPER_ACCELERATION : dynamic_accel;
     let final_max = (currentSkinKey === 'happy' || currentSkinKey === 'black') ? SUPER_MAX_FALL_SPEED : dynamic_max;
     
@@ -413,6 +516,12 @@ function check_for_score_increase() {
             currentScore++;
             topPipe.passed = true; 
             if (pipes[i+1]) pipes[i+1].passed = true;
+
+            if (currentScore % 10 === 0 && currentScore > 0 && currentBGIndex < 4) {
+                currentBGIndex++;
+                transitionText = AREA_NAMES[currentBGIndex];
+                transitionTimer = 80; 
+            }
         }
     }
 }
@@ -427,19 +536,41 @@ function display_star_count() {
 }
 
 function display_score() {
-    ctx.font = '20px Arial'; ctx.fillStyle = 'black'; ctx.textAlign = 'left';
-    ctx.fillText('Score: ' + currentScore, 10, 60); 
+    ctx.font = 'bold 24px Arial';
+    ctx.textAlign = 'left';
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 3;
+    ctx.strokeText('Score: ' + currentScore, 10, 65);
+    ctx.fillStyle = 'white';
+    ctx.fillText('Score: ' + currentScore, 10, 65); 
+
+    if (currentScore < 1) {
+        ctx.font = '14px Arial'; ctx.fillStyle = 'blue';
+        ctx.fillText('Press S for Shop', 10, 85);
+    } else {
+        ctx.font = '14px Arial'; ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.fillText('Shop Locked', 10, 85);
+    }
 }
 
 function display_lives() {
-    let y = 90;
+    let y = 115; 
+    ctx.font = 'bold 22px Arial';
+    ctx.textAlign = 'left';
+
     if ((currentSkinKey === 'tough' || currentSkinKey === 'black') && currentLives > 0) {
-        ctx.font = '20px Arial'; ctx.fillStyle = 'red';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.strokeText('Lives: ' + currentLives, 10, y);
+        ctx.fillStyle = '#ff4d4d'; 
         ctx.fillText('Lives: ' + currentLives, 10, y);
-        y += 30;
+        y += 35;
     }
     if ((currentSkinKey === 'yellow' || currentSkinKey === 'black') && wallDestroyCharges > 0) { 
-        ctx.font = '20px Arial'; ctx.fillStyle = 'orange';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.strokeText('Charges (D): ' + wallDestroyCharges, 10, y);
+        ctx.fillStyle = 'orange';
         ctx.fillText('Charges (D): ' + wallDestroyCharges, 10, y);
     }
 }
@@ -477,8 +608,16 @@ function reset_game() {
   bird.y = myCanvas.height / 2; bird.angle = 0; bird.velocity_y = 0;
   pipes = []; stars = []; shields = []; potions = []; currentScore = 0; pipe_spawn_timer = 0;
   isDoubleStarsActive = false; levelReached = 1;
+  chocolates = []; boss.stamina = 100; boss.x = CANVAS_WIDTH + 100; boss.movingIn = true;
+  victoryTimer = 0;
+  currentBGIndex = 0; 
+  transitionText = AREA_NAMES[0];
+  transitionTimer = 80;
   if (potionTimeoutID) clearTimeout(potionTimeoutID);
-  currentLives = (currentSkinKey === 'tough' || currentSkinKey === 'black') ? INITIAL_LIVES : 0; 
+  
+  if (currentSkinKey === 'black' || currentSkinKey === 'tough') currentLives = INITIAL_LIVES;
+  else currentLives = 0;
+
   wallDestroyCharges = (currentSkinKey === 'yellow' || currentSkinKey === 'black') ? MAX_DESTROY_CHARGES : 0;
   add_pipe(CANVAS_WIDTH, 100, 140); 
   deactivateShield(); 
@@ -489,6 +628,11 @@ function Do_a_Frame() {
   if (game_mode === 'shop') { display_shop(); return; }
   
   ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
+
+  if (backgroundImages[currentBGIndex].complete) {
+      ctx.drawImage(backgroundImages[currentBGIndex], 0, 0, myCanvas.width, myCanvas.height);
+  }
+
   bird.Do_Frame_Things();
   
   if (bottom_bar.complete) {
@@ -501,22 +645,37 @@ function Do_a_Frame() {
       ctx.font = '25px Arial'; ctx.fillStyle = 'red'; ctx.textAlign = 'center';
       ctx.fillText('Press, touch or click to start', myCanvas.width / 2, myCanvas.height / 4);
       break;
+
+    case 'boss':
+        time_game_last_running = new Date();
+        bottom_bar_offset += pipe_speed;
+        make_bird_slow_and_fall();
+        updateBoss(); 
+        display_star_count(); display_score(); display_lives();
+        break;
+
     case 'running':
       time_game_last_running = new Date();
       bottom_bar_offset += pipe_speed;
-      for (var i = 0; i < pipes.length; i++) { pipes[i].Do_Frame_Things(); }
+      
+      if (currentScore === 50) {
+          game_mode = 'boss';
+          pipes = []; 
+      } else {
+          for (var i = 0; i < pipes.length; i++) { pipes[i].Do_Frame_Things(); }
+          
+          pipe_spawn_timer += 1000 / FPS; 
+          if (pipe_spawn_timer > PIPE_SPAWN_INTERVAL_MS) { 
+              let gap_size = Math.max(90, 140 - (currentScore * 2)); 
+              let top_of_gap = Math.floor(Math.random() * (myCanvas.height - 300)) + 50; 
+              add_pipe(myCanvas.width, top_of_gap, gap_size);
+              pipe_spawn_timer = 0;
+          }
+      }
       
       make_bird_slow_and_fall(); 
       check_for_end_game();
       check_for_score_increase();
-      
-      pipe_spawn_timer += 1000 / FPS; 
-      if (pipe_spawn_timer > PIPE_SPAWN_INTERVAL_MS) { 
-          let gap_size = Math.max(90, 140 - (currentScore * 2)); 
-          let top_of_gap = Math.floor(Math.random() * (myCanvas.height - 300)) + 50; 
-          add_pipe(myCanvas.width, top_of_gap, gap_size);
-          pipe_spawn_timer = 0;
-      }
       
       [pipes, shields, stars, potions].forEach(arr => {
           for (let i = arr.length - 1; i >= 0; i--) {
@@ -535,7 +694,28 @@ function Do_a_Frame() {
       break;
   }
 
-  // DRAW THE FLASH EFFECT
+  if (victoryTimer > 0) {
+      ctx.font = 'bold 50px Arial';
+      ctx.fillStyle = 'lime';
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = 5;
+      ctx.textAlign = 'center';
+      ctx.strokeText("VICTORY!", myCanvas.width/2, myCanvas.height/2);
+      ctx.fillText("VICTORY!", myCanvas.width/2, myCanvas.height/2);
+      victoryTimer--;
+  }
+
+  if (transitionTimer > 0) {
+      ctx.font = 'bold 40px Arial';
+      ctx.fillStyle = 'white';
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = 4;
+      ctx.textAlign = 'center';
+      ctx.strokeText(transitionText, myCanvas.width / 2, myCanvas.height / 2);
+      ctx.fillText(transitionText, myCanvas.width / 2, myCanvas.height / 2);
+      transitionTimer--;
+  }
+
   if (flashTimer > 0) {
     ctx.fillStyle = flashColor;
     ctx.fillRect(0, 0, myCanvas.width, myCanvas.height);
